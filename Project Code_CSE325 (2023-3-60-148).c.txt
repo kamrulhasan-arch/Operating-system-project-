@@ -1,0 +1,299 @@
+
+#include <stdio.h>
+#define MAX 100
+
+// Function
+void fcfs(int n, int bt[]);
+void sjf(int n, int bt[]);
+void roundRobin(int n, int bt[], int quantum);
+void priorityScheduling(int n, int bt[], int priority[]);
+
+void srtf(int n, int at[], int bt[]);
+void priorityPreemptive(int n, int at[], int bt[], int pr[]);
+
+int main() {
+    int n, bt[MAX], at[MAX], choice, quantum, priority[MAX];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    printf("Enter Arrival Times:\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d: ", i + 1);
+        scanf("%d", &at[i]);
+    }
+
+    printf("Enter Burst Times:\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d: ", i + 1);
+        scanf("%d", &bt[i]);
+    }
+
+    while (1) {
+        printf("\n CPU Scheduling Simulation\n");
+        printf("1. FCFS\n");
+        printf("2. SJF\n");
+        printf("3. Round Robin\n");
+        printf("4. Priority (Non-Preemptive)\n");
+        printf("5. Preemptive SJF (SRTF)\n");
+        printf("6. Preemptive Priority\n");
+        printf("7. Exit\n");
+        printf("Choose: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                fcfs(n, bt);
+                break;
+            case 2:
+                sjf(n, bt);
+                break;
+            case 3:
+                printf("Enter Time Quantum: ");
+                scanf("%d", &quantum);
+                roundRobin(n, bt, quantum);
+                break;
+            case 4:
+                printf("Enter Priorities:\n");
+                for (int i = 0; i < n; i++) {
+                    printf("P%d: ", i + 1);
+                    scanf("%d", &priority[i]);
+                }
+                priorityScheduling(n, bt, priority);
+                break;
+
+            case 5:
+                srtf(n, at, bt);
+                break;
+
+            case 6:
+                printf("Enter Priorities:\n");
+                for (int i = 0; i < n; i++) {
+                    printf("P%d: ", i + 1);
+                    scanf("%d", &priority[i]);
+                }
+                priorityPreemptive(n, at, bt, priority);
+                break;
+
+            case 7:
+                return 0;
+        }
+    }
+}
+
+// FCFS
+void fcfs(int n, int bt[]) {
+    int wt[MAX];
+    float avg = 0;
+
+    printf("\nGantt Chart:\n|");
+
+    wt[0] = 0;
+    for (int i = 1; i < n; i++)
+        wt[i] = wt[i-1] + bt[i-1];
+
+    for (int i = 0; i < n; i++) {
+        printf(" P%d |", i+1);
+        avg += wt[i];
+    }
+
+    printf("\n\nProcess\tWT\n");
+    for (int i = 0; i < n; i++)
+        printf("P%d\t%d\n", i+1, wt[i]);
+
+    printf("Average Waiting Time = %.2f\n", avg/n);
+}
+
+// SJF
+void sjf(int n, int bt[]) {
+    int wt[MAX], pos[MAX], temp[MAX];
+
+    for (int i = 0; i < n; i++) {
+        temp[i] = bt[i];
+        pos[i] = i;
+    }
+
+    for (int i = 0; i < n-1; i++)
+        for (int j = i+1; j < n; j++)
+            if (temp[i] > temp[j]) {
+                int t = temp[i]; temp[i] = temp[j]; temp[j] = t;
+                t = pos[i]; pos[i] = pos[j]; pos[j] = t;
+            }
+
+    printf("\nGantt Chart:\n|");
+
+    wt[0] = 0;
+    for (int i = 1; i < n; i++)
+        wt[i] = wt[i-1] + temp[i-1];
+
+    float avg = 0;
+    for (int i = 0; i < n; i++) {
+        printf(" P%d |", pos[i]+1);
+        avg += wt[i];
+    }
+
+    printf("\nAverage Waiting Time = %.2f\n", avg/n);
+}
+
+// ROUND ROBIN
+void roundRobin(int n, int bt[], int quantum) {
+    int rem[MAX], wt[MAX], time = 0;
+
+    for (int i = 0; i < n; i++)
+        rem[i] = bt[i];
+
+    printf("\nGantt Chart:\n|");
+
+    int done;
+    do {
+        done = 1;
+        for (int i = 0; i < n; i++) {
+            if (rem[i] > 0) {
+                done = 0;
+
+                printf(" P%d |", i+1);
+
+                if (rem[i] > quantum) {
+                    time += quantum;
+                    rem[i] -= quantum;
+                } else {
+                    time += rem[i];
+                    wt[i] = time - bt[i];
+                    rem[i] = 0;
+                }
+            }
+        }
+    } while (!done);
+
+    float avg = 0;
+    for (int i = 0; i < n; i++)
+        avg += wt[i];
+
+    printf("\nAverage Waiting Time = %.2f\n", avg/n);
+}
+
+// NON-PREEMPTIVE PRIORITY
+void priorityScheduling(int n, int bt[], int pr[]) {
+    int wt[MAX], pos[MAX], temp_bt[MAX], temp_pr[MAX];
+
+    for (int i = 0; i < n; i++) {
+        pos[i] = i;
+        temp_bt[i] = bt[i];
+        temp_pr[i] = pr[i];
+    }
+
+    for (int i = 0; i < n-1; i++)
+        for (int j = i+1; j < n; j++)
+            if (temp_pr[i] > temp_pr[j]) {
+                int t = temp_pr[i]; temp_pr[i] = temp_pr[j]; temp_pr[j] = t;
+                t = temp_bt[i]; temp_bt[i] = temp_bt[j]; temp_bt[j] = t;
+                t = pos[i]; pos[i] = pos[j]; pos[j] = t;
+            }
+
+    printf("\nGantt Chart:\n|");
+
+    wt[0] = 0;
+    for (int i = 1; i < n; i++)
+        wt[i] = wt[i-1] + temp_bt[i-1];
+
+    float avg = 0;
+    for (int i = 0; i < n; i++) {
+        printf(" P%d |", pos[i]+1);
+        avg += wt[i];
+    }
+
+    printf("\nAverage Waiting Time = %.2f\n", avg/n);
+}
+
+// PREEMPTIVE SJF
+void srtf(int n, int at[], int bt[]) {
+    int rt[MAX], complete = 0, time = 0, min, shortest;
+    int wt[MAX];
+
+    for (int i = 0; i < n; i++)
+        rt[i] = bt[i];
+
+    printf("\nGantt Chart:\n|");
+
+    while (complete != n) {
+        min = 9999;
+        int found = 0;
+
+        for (int i = 0; i < n; i++) {
+            if (at[i] <= time && rt[i] < min && rt[i] > 0) {
+                min = rt[i];
+                shortest = i;
+                found = 1;
+            }
+        }
+
+        if (!found) {
+            time++;
+            continue;
+        }
+
+        printf(" P%d |", shortest+1);
+
+        rt[shortest]--;
+
+        if (rt[shortest] == 0) {
+            complete++;
+            int finish = time + 1;
+            wt[shortest] = finish - bt[shortest] - at[shortest];
+            if (wt[shortest] < 0) wt[shortest] = 0;
+        }
+
+        time++;
+    }
+
+    float avg = 0;
+    for (int i = 0; i < n; i++)
+        avg += wt[i];
+
+    printf("\nAverage Waiting Time = %.2f\n", avg/n);
+}
+
+// PREEMPTIVE PRIORITY
+void priorityPreemptive(int n, int at[], int bt[], int pr[]) {
+    int rt[MAX], complete = 0, time = 0, wt[MAX];
+
+    for (int i = 0; i < n; i++)
+        rt[i] = bt[i];
+
+    printf("\nGantt Chart:\n|");
+
+    while (complete != n) {
+        int idx = -1, highest = 9999;
+
+        for (int i = 0; i < n; i++) {
+            if (at[i] <= time && rt[i] > 0 && pr[i] < highest) {
+                highest = pr[i];
+                idx = i;
+            }
+        }
+
+        if (idx == -1) {
+            time++;
+            continue;
+        }
+
+        printf(" P%d |", idx+1);
+
+        rt[idx]--;
+
+        if (rt[idx] == 0) {
+            complete++;
+            int finish = time + 1;
+            wt[idx] = finish - bt[idx] - at[idx];
+            if (wt[idx] < 0) wt[idx] = 0;
+        }
+
+        time++;
+    }
+
+    float avg = 0;
+    for (int i = 0; i < n; i++)
+        avg += wt[i];
+
+    printf("\nAverage Waiting Time = %.2f\n", avg/n);
+}
